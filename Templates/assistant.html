@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Speech to ISL Assistant</h2>
+    <p>Click the button below to start the assistant:</p>
+    <a href="{{ url_for('run_assistant') }}" class="btn btn-primary">Start Assistant</a>
+{% endblock %}

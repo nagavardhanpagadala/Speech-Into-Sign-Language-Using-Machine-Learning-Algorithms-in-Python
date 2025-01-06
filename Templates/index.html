@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to ISL Converter</title>
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #1a1a2e;
+            --primary-light: #ffffff;
+            --accent-dark: #00ff88;
+            --accent-light: #ff6b6b;
+            --glass-light: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(26, 26, 46, 0.8);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        body.dark-mode {
+            background: var(--primary-dark);
+            color: var(--primary-light);
+        }
+
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            /* Changed to -1 */
+            transition: opacity 0.5s ease;
+        }
+
+        .video-light,
+        .video-dark {
+            opacity: 100;
+        }
+
+        body:not(.dark-mode) .video-light,
+        body.dark-mode .video-dark {
+            opacity: 0.3;
+        }
+
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.2);
+            /* Lighter background */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+            /* Add this */
+            z-index: 10;
+            /* Add this */
+        }
+
+        .dark-mode .glass-morphism {
+            background: rgba(26, 26, 46, 0.7);
+            /* More opaque in dark mode */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+            transform: translateY(0);
+            position: relative;
+            /* Add this */
+            z-index: 20;
+            /* Add this */
+            background: rgba(255, 255, 255, 0.2);
+            /* Add this */
+            backdrop-filter: blur(10px);
+            /* Add this */
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+            /* Lighter on hover */
+        }
+
+        .dark-mode .feature-card:hover {
+            background: rgba(26, 26, 46, 0.8);
+            /* Darker on hover in dark mode */
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.2);
+            color: var(--accent-dark);
+        }
+
+        .dark-mode .feature-card {
+            background: rgba(26, 26, 46, 0.7);
+            /* Add this */
+        }
+
+        .gradient-text {
+            background: linear-gradient(45deg, #00ff88, #00ffee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .dark-mode .gradient-text {
+            /* background: linear-gradient(45deg, #ff6b6b, #ffd93d); */
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 45;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .glow-effect {
+            transition: all 0.3s ease;
+        }
+
+        .glow-effect:hover {
+            box-shadow: 0 0 15px var(--accent-dark);
+        }
+
+        .dark-mode .glow-effect:hover {
+            box-shadow: 0 0 15px var(--accent-light);
+        }
+
+        .modal {
+            transition: all 0.3s ease;
+            z-index: 50;
+        }
+
+        .modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+
+        .animate-gradient {
+            background-size: 200% 200%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+
+        /* Add these CSS rules in your style section */
+        .features-section {
+            position: relative;
+            z-index: 10;
+            opacity: 1 !important;
+            /* Force opacity */
+            transform: none !important;
+            /* Prevent transform animations from hiding it */
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            opacity: 1 !important;
+            /* Force opacity */
+            transform: translateY(0) !important;
+            /* Force position */
+        }
+
+        /* Update the GSAP animation for feature cards */
+        .feature-card-animation {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        /* Add these to your existing style section */
+        .hero-section {
+            position: relative;
+            z-index: 20;
+            opacity: 1 !important;
+        }
+
+        .hero-button {
+            position: relative;
+            z-index: 30;
+            opacity: 1 !important;
+        }
+
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        nav.glass-morphism {
+            z-index: 40;
+        }
+
+        .modal-container {
+            z-index: 51;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <!-- Video Backgrounds -->
+    <video class="video-background video-light" autoplay muted loop>
+        <source src="https://cdn.dribbble.com/userupload/15822037/file/original-9433d8588f791a0e2c1807b8e909dd21.mp4"
+            type="video/mp4">
+    </video>
+    <video class="video-background video-dark" autoplay muted loop>
+        <source src="https://cdn.dribbble.com/userupload/15822084/file/original-6a1c77f74b5bd565f2f30edb00824337.mp4"
+            type="video/mp4">
+    </video>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle glass-morphism" onclick="toggleTheme()">
+        <i class="fas fa-moon text-2xl text-yellow-500"></i>
+    </button>
+
+    <!-- Navigation Bar -->
+    <nav class="glass-morphism fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-sign-language text-blue-600 text-2xl mr-2 animate-bounce"></i>
+                    <span class="font-bold text-xl gradient-text">ISL Converter</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('predict') }}"
+                        class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium glow-effect">
+                        <i class="fas fa-microphone mr-1"></i> Convert
+                    </a>
+                    <button onclick="logout()"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium glow-effect">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    </button>
+                    {% else %}
+                    <button onclick="openModal('loginModal')"
+                        class="text-blue-600 hover:text-blue-700 px-3 py-2 rounded-md text-sm font-medium glow-effect">
+                        <i class="fas fa-sign-in-alt mr-1"></i> Login
+                    </button>
+                    <button onclick="openModal('registerModal')"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium glow-effect">
+                        <i class="fas fa-user-plus mr-1"></i> Sign Up
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <!-- Hero Section -->
+            <div class="hero-section text-center mb-20">
+                <h1 class="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl gradient-text">
+                    <span class="block">Speech to</span>
+                    <span class="block">Indian Sign Language</span>
+                </h1>
+                <p class="mt-3 max-w-md mx-auto text-base sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                    Convert spoken words into Indian Sign Language gestures instantly. Perfect for learning and
+                    communication.
+                </p>
+                <div class="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+                    {% if current_user.is_authenticated %}
+                    <div class="rounded-md shadow hero-button">
+                        <a href="{{ url_for('predict') }}"
+                            class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10 glow-effect">
+                            <i class="fas fa-microphone mr-2"></i> Start Converting
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="rounded-md shadow hero-button">
+                        <button onclick="openModal('registerModal')"
+                            class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10 glow-effect">
+                            <i class="fas fa-user-plus mr-2"></i> Get Started
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="features-section grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+                <!-- Feature Card 1 -->
+                <div class="feature-card glass-morphism p-6 rounded-xl feature-card-animation">
+                    <i class="feature-icon fas fa-microphone-alt text-blue-500"></i>
+                    <h3 class="text-xl font-bold mb-2">Speech Recognition</h3>
+                    <p class="text-sm">Advanced speech recognition technology for accurate voice capture and processing.
+                    </p>
+                </div>
+
+                <!-- Feature Card 2 -->
+                <div class="feature-card glass-morphism p-6 rounded-xl feature-card-animation">
+                    <i class="feature-icon fas fa-sign-language text-green-500"></i>
+                    <h3 class="text-xl font-bold mb-2">Real-time Translation</h3>
+                    <p class="text-sm">Instant conversion of speech to Indian Sign Language gestures.</p>
+                </div>
+
+                <!-- Feature Card 3 -->
+                <div class="feature-card glass-morphism p-6 rounded-xl feature-card-animation">
+                    <i class="feature-icon fas fa-history text-purple-500"></i>
+                    <h3 class="text-xl font-bold mb-2">History Tracking</h3>
+                    <p class="text-sm">Keep track of your conversions and access them anytime.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Login Modal -->
+    <div id="loginModal"
+        class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div
+            class="modal-container glass-morphism w-11/12 md:max-w-md mx-auto rounded-xl shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold gradient-text">Login</p>
+                    <button class="modal-close cursor-pointer z-50 text-gray-500 hover:text-gray-700"
+                        onclick="closeModal('loginModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="loginForm" class="space-y-4">
+                    <div class="transform transition-all duration-300">
+                        <label class="block text-sm font-bold mb-2">Email</label>
+                        <input type="email" name="email"
+                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-black"
+                            required>
+                    </div>
+                    <div class="transform transition-all duration-300">
+                        <label class="block text-sm font-bold mb-2">Password</label>
+                        <input type="password" name="password"
+                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-black"
+                            required>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit"
+                            class="glow-effect bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-300">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal"
+        class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div
+            class="modal-container glass-morphism w-11/12 md:max-w-md mx-auto rounded-xl shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold gradient-text">Sign Up</p>
+                    <button class="modal-close cursor-pointer z-50 text-gray-500 hover:text-gray-700"
+                        onclick="closeModal('registerModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="registerForm" class="space-y-4">
+                    <div class="transform transition-all duration-300">
+                        <label class="block text-sm font-bold mb-2">Username</label>
+                        <input type="text" name="username"
+                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-black"
+                            required>
+                    </div>
+                    <div class="transform transition-all duration-300">
+                        <label class="block text-sm font-bold mb-2">Email</label>
+                        <input type="email" name="email"
+                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-black"
+                            required>
+                    </div>
+                    <div class="transform transition-all duration-300">
+                        <label class="block text-sm font-bold mb-2">Password</label>
+                        <input type="password" name="password"
+                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-black"
+                            required>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit"
+                            class="glow-effect bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transform transition-all duration-300">
+                            <i class="fas fa-user-plus mr-2"></i> Sign Up
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden">
+        <div class="glass-morphism text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+            <i id="toastIcon" class="fas"></i>
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.querySelector('.theme-toggle i');
+            icon.classList.toggle('fa-moon');
+            icon.classList.toggle('fa-sun');
+
+            // Save theme preference
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        // Check for saved theme preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.theme-toggle i').classList.replace('fa-moon', 'fa-sun');
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const messageEl = document.getElementById('toastMessage');
+
+            icon.className = `fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`;
+            messageEl.textContent = message;
+            toast.classList.remove('hidden');
+
+            gsap.from(toast, {
+                x: 100,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+
+            setTimeout(() => {
+                gsap.to(toast, {
+                    x: 100,
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: "power2.in",
+                    onComplete: () => toast.classList.add('hidden')
+                });
+            }, 3000);
+        }
+
+        // Modal functionality
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+
+            gsap.from(modal.querySelector('.modal-container'), {
+                scale: 0.8,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            gsap.to(modal.querySelector('.modal-container'), {
+                scale: 0.8,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.in",
+                onComplete: () => {
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                    document.body.classList.remove('modal-active');
+                }
+            });
+        }
+
+        // GSAP Animations
+        document.addEventListener('DOMContentLoaded', () => {
+
+            gsap.from("h1", {
+                duration: 1,
+                y: 100,
+                opacity: 0,
+                ease: "power4.out"
+            });
+
+            gsap.from("p", {
+                duration: 1,
+                y: 50,
+                opacity: 0,
+                ease: "power4.out",
+                delay: 0.3
+            });
+
+            // Feature cards animation
+            gsap.from(".feature-card-animation", {
+                duration: 0.8,
+                y: 50,
+                opacity: 0,
+                stagger: 0.2,
+                ease: "power4.out",
+                delay: 0.5,
+                onComplete: function () {
+                    document.querySelectorAll('.feature-card').forEach(card => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    });
+                }
+            });
+
+            // Form animations
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('focus', (e) => {
+                    gsap.to(e.target.parentElement, {
+                        scale: 1.02,
+                        duration: 0.3
+                    });
+                });
+
+                input.addEventListener('blur', (e) => {
+                    gsap.to(e.target.parentElement, {
+                        scale: 1,
+                        duration: 0.3
+                    });
+                });
+            });
+        });
+
+        // Existing form submission logic
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData)),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast('Login successful!', 'success');
+                    setTimeout(() => window.location.href = '/predict', 1000);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (error) {
+                showToast('An error occurred during login', 'error');
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData)),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast('Registration successful! Please login.', 'success');
+                    closeModal('registerModal');
+                    setTimeout(() => openModal('loginModal'), 1000);
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (error) {
+                showToast('An error occurred during registration', 'error');
+            }
+        });
+
+        async function logout() {
+            try {
+                const response = await fetch('/logout');
+                if (response.ok) {
+                    showToast('Logout successful!', 'success');
+                    setTimeout(() => window.location.href = '/', 1000);
+                }
+            } catch (error) {
+                showToast('An error occurred during logout', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

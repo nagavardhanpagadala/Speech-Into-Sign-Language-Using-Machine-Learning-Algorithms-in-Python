@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to ISL Converter - Convert</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Base Animations */
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .gradient-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        /* Recording Animation */
+        .recording-pulse {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* Listening Wave Animation */
+        .wave-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .wave {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle at center, transparent 30%, rgba(255, 255, 255, 0.2) 70%);
+            animation: wave 2s linear infinite;
+        }
+
+        @keyframes wave {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Glowing Effect */
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px #fff,
+                    0 0 10px #fff,
+                    0 0 15px #0073e6,
+                    0 0 20px #0073e6;
+            }
+
+            to {
+                box-shadow: 0 0 10px #fff,
+                    0 0 20px #fff,
+                    0 0 30px #0073e6,
+                    0 0 40px #0073e6;
+            }
+        }
+
+        /* Result Card Animation */
+        .result-card {
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Playback Button Animation */
+        .playback-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .playback-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.2),
+                    transparent);
+            transition: all 0.5s;
+        }
+
+        .playback-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Custom Scrollbar */
+        .history-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #4B5563 #F3F4F6;
+        }
+
+        .history-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .history-scroll::-webkit-scrollbar-track {
+            background: #F3F4F6;
+            border-radius: 10px;
+        }
+
+        .history-scroll::-webkit-scrollbar-thumb {
+            background-color: #4B5563;
+            border-radius: 10px;
+            border: 2px solid #F3F4F6;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            z-index: 50;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="gradient-bg min-h-screen">
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white bg-opacity-90 backdrop-blur-md shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-sign-language text-blue-600 text-2xl mr-2 glow"></i>
+                    <a href="/" class="font-bold text-xl text-gray-800">ISL Converter</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full">
+                        <i class="fas fa-user text-blue-600"></i>
+                        <span class="text-gray-700">{{ current_user.username }}</span>
+                    </div>
+                    <button onclick="logout()"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <!-- Speech Input Card -->
+                <div
+                    class="bg-white bg-opacity-90 backdrop-blur-md rounded-lg shadow-xl p-6 transform transition-all duration-300 hover:scale-[1.02]">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-microphone mr-2 text-blue-600"></i>
+                        Speech Input
+                    </h2>
+                    <div class="flex flex-col items-center space-y-4">
+                        <div class="relative">
+                            <button id="startButton"
+                                class="w-20 h-20 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white text-3xl focus:outline-none transition-all duration-300">
+                                <i class="fas fa-microphone"></i>
+                                <div class="wave-container hidden" id="waveAnimation">
+                                    <div class="wave"></div>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <p id="status" class="text-gray-600 font-medium">Press Space or click to start</p>
+                            <p id="timer" class="text-sm text-gray-500 mt-1 hidden">00:00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Card -->
+                <div id="resultCard"
+                    class="bg-white bg-opacity-90 backdrop-blur-md rounded-lg shadow-xl p-6 hidden transform transition-all duration-300">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-comment-dots mr-2 text-green-600"></i>
+                        Result
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <p id="recognizedText" class="text-lg font-medium text-gray-10000"></p>
+                            <div class="flex items-center mt-3 space-x-3">
+                                <button onclick="playHistoryAudio('/static/temp/speech_2_1736064037.mp3')"
+                                    id="playbackButton"
+                                    class="playback-btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium hidden">
+                                    <i onclick="playHistoryAudio('/static/temp/speech_2_1736064037.mp3')"
+                                        class="fas fa-play mr-1"></i> Play
+                                </button>
+                                <div id="audioProgress"
+                                    class="hidden flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 transition-all duration-300" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="gifContainer" class="gif-container hidden">
+                            <img id="resultGif" class="w-full h-full object-contain rounded-lg shadow-md" src=""
+                                alt="ISL Gesture">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Card -->
+                <div class="bg-white bg-opacity-90 backdrop-blur-md rounded-lg shadow-xl p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-chart-line mr-2 text-purple-600"></i>
+                        Analytics
+                    </h2>
+                    <div class="space-y-4">
+                        <canvas id="analysisChart" class="w-full h-64"></canvas>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-gray-500">Total Conversions</h3>
+                                <p id="totalConversions" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="text-sm font-medium text-gray-500">Success Rate</h3>
+                                <p id="successRate" class="text-2xl font-bold text-gray-800">0%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- History Card -->
+                <div class="bg-white bg-opacity-90 backdrop-blur-md rounded-lg shadow-xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-history mr-2 text-purple-600"></i>
+                            History
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button onclick="downloadHistory()"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-all duration-300">
+                                <i class="fas fa-download mr-1"></i> Export
+                            </button>
+                            <button onclick="clearHistory()"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-all duration-300">
+                                <i class="fas fa-trash mr-1"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div id="historyContainer" class="history-scroll space-y-4">
+                        <!-- History items will be dynamically added here -->
+                    </div>
+                </div>
+
+                <!-- Statistics Card -->
+                <div class="bg-white bg-opacity-90 backdrop-blur-md rounded-lg shadow-xl p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+                        <i class="fas fa-chart-pie mr-2 text-indigo-600"></i>
+                        Statistics
+                    </h2>
+                    <canvas id="statisticsChart" class="w-full h-64"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div class="fixed bottom-4 right-4">
+        <button onclick="toggleShortcutsHelp()"
+            class="bg-gray-800 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300">
+            <!-- Default icon -->
+            <i id="theme-icon" class="fas fa-moon"></i>
+
+            <script>
+                const themeIcon = document.getElementById('theme-icon');
+                themeIcon.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-theme'); // Add your theme logic
+                    if (document.body.classList.contains('dark-theme')) {
+                        themeIcon.classList.replace('fa-moon', 'fa-sun'); // Change to sun icon
+                    } else {
+                        themeIcon.classList.replace('fa-sun', 'fa-moon'); // Change back to moon icon
+                    }
+                });
+            </script>
+
+        </button>
+    </div>
+
+    <div id="shortcutsHelp" class="fixed bottom-16 right-4 bg-white p-4 rounded-lg shadow-lg hidden">
+        <h3 class="font-bold mb-2">Keyboard Shortcuts</h3>
+        <ul class="space-y-2">
+            <li><kbd class="bg-gray-100 px-2 py-1 rounded">Space</kbd> Start/Stop Recording</li>
+            <li><kbd class="bg-gray-100 px-2 py-1 rounded">Esc</kbd> Clear Results</li>
+        </ul>
+    </div>
+    <script>
+        let isListening = false;
+        let recognition = null;
+        let recordingStartTime = null;
+        let timerInterval = null;
+        let audio = new Audio();
+        let isPlaying = false;
+        let totalConversions = 0;
+        let successfulConversions = 0;
+        let analyticsData = {
+            labels: [],
+            conversions: [],
+            successes: []
+        };
+
+
+
+
+        audio.addEventListener('ended', function () {
+            isPlaying = false;
+            const playbackButton = document.getElementById('playbackButton');
+            const icon = playbackButton.querySelector('i');
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+            playbackButton.classList.remove('bg-red-500');
+            playbackButton.classList.add('bg-green-500');
+        });
+
+        audio.addEventListener('error', function (e) {
+            console.error('Audio error:', e);
+            showToast('Error loading audio', 'error');
+        });
+
+
+
+        // Initialize Charts
+        const analysisChart = new Chart(
+            document.getElementById('analysisChart').getContext('2d'),
+            {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Conversions',
+                        data: [],
+                        borderColor: 'rgb(59, 130, 246)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Conversion History'
+                        }
+                    }
+                }
+            }
+        );
+
+        const statisticsChart = new Chart(
+            document.getElementById('statisticsChart').getContext('2d'),
+            {
+                type: 'doughnut',
+                data: {
+                    labels: ['Successful', 'Failed'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(239, 68, 68)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            }
+        );
+
+        // Initialize speech recognition
+        // Replace the existing initializeSpeechRecognition function with this:
+        function initializeSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function () {
+                    startRecording();
+                };
+
+                recognition.onresult = function (event) {
+                    const text = event.results[0][0].transcript;
+                    stopRecording();
+                    processRecognizedSpeech(text);
+                };
+
+                recognition.onerror = function (event) {
+                    console.error('Speech recognition error:', event.error);
+                    stopRecording();
+                    showToast('Error recognizing speech. Please try again.', 'error');
+                    updateStatistics(false);
+                };
+
+                recognition.onend = function () {
+                    stopRecording();
+                };
+
+                // Add click event listener to the start button
+                document.getElementById('startButton').addEventListener('click', toggleRecording);
+            } else {
+                showToast('Speech recognition is not supported in this browser.', 'error');
+                document.getElementById('startButton').disabled = true;
+            }
+        }
+
+
+        // Add this new function after initializeSpeechRecognition
+        function toggleRecording() {
+            if (!isListening) {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    if (error.name === 'InvalidStateError') {
+                        recognition.stop();
+                        setTimeout(() => {
+                            recognition.start();
+                        }, 200);
+                    } else {
+                        console.error('Error starting recognition:', error);
+                        showToast('Error starting speech recognition. Please try again.', 'error');
+                    }
+                }
+            } else {
+                recognition.stop();
+            }
+        }
+
+        // Recording UI Management
+        function startRecording() {
+            const button = document.getElementById('startButton');
+            const status = document.getElementById('status');
+            const waveAnimation = document.getElementById('waveAnimation');
+            const timer = document.getElementById('timer');
+
+            button.classList.add('recording-pulse', 'bg-red-600');
+            button.classList.remove('bg-blue-600');
+            button.querySelector('i').classList.remove('fa-microphone');
+            button.querySelector('i').classList.add('fa-stop');
+            status.textContent = 'Listening... Click to stop';
+            waveAnimation.classList.remove('hidden');
+            timer.classList.remove('hidden');
+
+            isListening = true;
+            recordingStartTime = Date.now();
+            startTimer();
+
+            // Show preparing animation
+            showToast('Preparing to listen...', 'info');
+            setTimeout(() => {
+                showToast('Ready! Start speaking', 'success');
+            }, 1000);
+        }
+
+        function stopRecording() {
+            const button = document.getElementById('startButton');
+            const status = document.getElementById('status');
+            const waveAnimation = document.getElementById('waveAnimation');
+            const timer = document.getElementById('timer');
+
+            button.classList.remove('recording-pulse', 'bg-red-600');
+            button.classList.add('bg-blue-600');
+            button.querySelector('i').classList.remove('fa-stop');
+            button.querySelector('i').classList.add('fa-microphone');
+            status.textContent = 'Press Space or click to start';
+            waveAnimation.classList.add('hidden');
+            timer.classList.add('hidden');
+
+            isListening = false;
+            stopTimer();
+        }
+
+        // Timer Management
+        function startTimer() {
+            stopTimer();
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimer() {
+            if (!recordingStartTime) return;
+
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+        }
+
+        // Speech Processing
+        // Replace the existing processRecognizedSpeech function with this:
+        async function processRecognizedSpeech(text) {
+            try {
+                showLoading();
+                const response = await fetch('/process_text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Speech processing failed');
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    displayResult(data);
+                    showToast('Speech processed successfully!', 'success');
+                    updateStatistics(true);  // Only update statistics here
+                } else {
+                    throw new Error(data.error || 'Failed to process speech');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+                updateStatistics(false);  // And here for failures
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Result Display
+        function displayResult(data) {
+            const resultCard = document.getElementById('resultCard');
+            const recognizedText = document.getElementById('recognizedText');
+            const gifContainer = document.getElementById('gifContainer');
+            const resultGif = document.getElementById('resultGif');
+            const playbackButton = document.getElementById('playbackButton');
+            const audioProgress = document.getElementById('audioProgress');
+
+            resultCard.classList.remove('hidden');
+
+            if (data.text) {
+                recognizedText.textContent = data.text;
+                recognizedText.classList.add('animate-fade-in');
+
+                // Modified audio handling
+                if (data.audio_path) {
+                    // Update the playback button's onclick attribute with the new audio path
+                    playbackButton.setAttribute('onclick', `playHistoryAudio('${data.audio_path}')`);
+                    playbackButton.querySelector('i').setAttribute('onclick', `playHistoryAudio('${data.audio_path}')`);
+
+                    // Reset audio state
+                    audio.pause();
+                    audio = new Audio(data.audio_path);
+                    isPlaying = false;
+
+                    // Show audio controls
+                    playbackButton.classList.remove('hidden');
+                    audioProgress.classList.remove('hidden');
+
+                    // Reset button appearance
+                    const icon = playbackButton.querySelector('i');
+                    icon.classList.remove('fa-pause');
+                    icon.classList.add('fa-play');
+                    playbackButton.classList.remove('bg-red-500');
+                    playbackButton.classList.add('bg-green-500');
+
+                    // Add event listeners
+                    audio.addEventListener('timeupdate', updateAudioProgress);
+                    audio.addEventListener('ended', resetPlayback);
+                }
+            }
+
+            if (data.gif_path) {
+                resultGif.src = data.gif_path;
+                gifContainer.classList.remove('hidden');
+                resultGif.classList.add('animate-fade-in');
+            } else {
+                gifContainer.classList.add('hidden');
+            }
+
+            addToHistory(data);
+            // updateAnalytics();
+        }
+
+        // Continue with more JavaScript...
+
+        // Audio Playback Management
+        audio.addEventListener('timeupdate', updateAudioProgress);
+        audio.addEventListener('ended', resetPlayback);
+
+        function togglePlayback() {
+            const playbackButton = document.getElementById('playbackButton');
+            const icon = playbackButton.querySelector('i');
+
+            if (!audio || !audio.src) {
+                showToast('No audio available', 'error');
+                return;
+            }
+
+            if (isPlaying) {
+                audio.pause();
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+                playbackButton.classList.remove('bg-red-500');
+                playbackButton.classList.add('bg-green-500');
+                isPlaying = false;
+            } else {
+                // Add error handling for play()
+                audio.play().then(() => {
+                    icon.classList.remove('fa-play');
+                    icon.classList.add('fa-pause');
+                    playbackButton.classList.remove('bg-green-500');
+                    playbackButton.classList.add('bg-red-500');
+                    isPlaying = true;
+                }).catch(error => {
+                    console.error('Audio playback error:', error);
+                    showToast('Error playing audio: ' + error.message, 'error');
+                });
+            }
+        }
+
+        function updateAudioProgress() {
+            const progressBar = document.querySelector('#audioProgress > div');
+            if (audio && audio.duration && !isNaN(audio.duration)) {  // Check if audio and duration are valid
+                const percentage = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = `${percentage}%`;
+            } else {
+                progressBar.style.width = '0%';  // Reset progress if audio is not valid
+            }
+        }
+
+        function resetPlayback() {
+            const playbackButton = document.getElementById('playbackButton');
+            const icon = playbackButton.querySelector('i');
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+            playbackButton.classList.remove('bg-red-500');
+            playbackButton.classList.add('bg-green-500');
+            isPlaying = false;
+        }
+
+        function resetPlayback() {
+            const playbackButton = document.getElementById('playbackButton');
+            const icon = playbackButton.querySelector('i');
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+            playbackButton.classList.remove('bg-red-500');
+            playbackButton.classList.add('bg-green-500');
+            isPlaying = false;
+        }
+
+        // History Management
+        function addToHistory(data) {
+            const historyContainer = document.getElementById('historyContainer');
+            const historyItem = document.createElement('div');
+            historyItem.className = 'result-card bg-gray-50 p-4 rounded-lg transform transition-all duration-300 hover:scale-102 border border-gray-200';
+
+            const timestamp = new Date().toLocaleString();
+
+            historyItem.innerHTML = `
+        <div class="flex justify-between items-start">
+            <div class="flex-1">
+                <p class="text-gray-800 font-medium">${data.text || 'No text recognized'}</p>
+                <span class="text-sm text-gray-500">${timestamp}</span>
+            </div>
+            <div class="flex space-x-2">
+                ${data.audio_path ? `
+                    <button onclick="playHistoryAudio('${data.audio_path}')" 
+                            class="history-play-button text-green-500 hover:text-green-600 transition-colors">
+                        <i class="fas fa-play-circle"></i>
+                    </button>
+                ` : ''}
+                <button onclick="removeHistoryItem(this)" 
+                        class="text-red-500 hover:text-red-600 transition-colors">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+        </div>
+        ${data.gif_path ? `
+            <div class="mt-2">
+                <img src="${data.gif_path}" alt="ISL Gesture" 
+                     class="h-20 object-contain rounded-lg shadow-sm">
+            </div>
+        ` : ''}
+    `;
+
+            // Add with animation
+            historyItem.style.opacity = '0';
+            historyContainer.insertBefore(historyItem, historyContainer.firstChild);
+            setTimeout(() => {
+                historyItem.style.opacity = '1';
+            }, 10);
+
+        }
+
+        // Analytics and Statistics
+        function updateAnalytics() {
+            totalConversions++;
+            document.getElementById('totalConversions').textContent = totalConversions;
+
+            const successRate = Math.round((successfulConversions / totalConversions) * 100);
+            document.getElementById('successRate').textContent = `${successRate}%`;
+
+            // Update charts
+            updateAnalysisChart();
+            updateStatisticsChart();
+        }
+
+        function updateAnalysisChart() {
+            const currentDate = new Date().toLocaleDateString();
+            const lastIndex = analyticsData.labels.length - 1;
+
+            if (analyticsData.labels[lastIndex] === currentDate) {
+                analyticsData.conversions[lastIndex]++;
+            } else {
+                analyticsData.labels.push(currentDate);
+                analyticsData.conversions.push(1);
+            }
+
+            // Keep only last 7 days
+            if (analyticsData.labels.length > 7) {
+                analyticsData.labels.shift();
+                analyticsData.conversions.shift();
+            }
+
+            analysisChart.data.labels = analyticsData.labels;
+            analysisChart.data.datasets[0].data = analyticsData.conversions;
+            analysisChart.update();
+        }
+
+        function updateStatisticsChart() {
+            statisticsChart.data.datasets[0].data = [
+                successfulConversions,
+                totalConversions - successfulConversions
+            ];
+            statisticsChart.update();
+        }
+
+
+        function updateStatistics(isSuccess) {
+            totalConversions++;
+            if (isSuccess) {
+                successfulConversions++;
+            }
+
+            const successRate = Math.round((successfulConversions / totalConversions) * 100);
+            document.getElementById('totalConversions').textContent = totalConversions;
+            document.getElementById('successRate').textContent = `${successRate}%`;
+
+            // Update charts
+            updateStatisticsChart();
+            updateAnalysisChart();
+
+            console.log(`Total: ${totalConversions}, Successful: ${successfulConversions}, Rate: ${successRate}%`); // For debugging
+        }
+
+
+        function playHistoryAudio(audioPath) {
+            // If current audio is playing, stop it
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                // Reset all play buttons to initial state
+                document.querySelectorAll('.fa-pause').forEach(icon => {
+                    icon.classList.remove('fa-pause');
+                    icon.classList.add('fa-play');
+                });
+                return;
+            }
+
+            // Create new audio instance with the provided path
+            audio = new Audio(audioPath);
+
+            // Add these event listeners for progress bar
+            audio.addEventListener('timeupdate', updateAudioProgress);
+            audio.addEventListener('ended', resetPlayback);
+
+            audio.play().then(() => {
+                isPlaying = true;
+                // Update all related play buttons
+                document.querySelectorAll(`[onclick="playHistoryAudio('${audioPath}')"] i`).forEach(icon => {
+                    icon.classList.remove('fa-play');
+                    icon.classList.add('fa-pause');
+                });
+            }).catch(error => {
+                console.error('Audio playback error:', error);
+                showToast('Error playing audio', 'error');
+            });
+
+            // Add ended event listener
+            audio.addEventListener('ended', () => {
+                isPlaying = false;
+                document.querySelectorAll(`[onclick="playHistoryAudio('${audioPath}')"] i`).forEach(icon => {
+                    icon.classList.remove('fa-pause');
+                    icon.classList.add('fa-play');
+                });
+                // Reset progress bar when audio ends
+                const progressBar = document.querySelector('#audioProgress > div');
+                progressBar.style.width = '0%';
+            });
+        }
+
+        // Utility Functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2`;
+
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+
+            toast.innerHTML = `
+            <i class="fas fa-${icon}"></i>
+            <span>${message}</span>
+        `;
+
+            document.getElementById('toastContainer').appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Export and Clear History
+        function downloadHistory() {
+            const history = Array.from(document.getElementById('historyContainer').children);
+            const csvContent = history.map(item => {
+                const text = item.querySelector('p').textContent;
+                const timestamp = item.querySelector('span').textContent;
+                return `"${text}","${timestamp}"`;
+            }).join('\n');
+
+            const blob = new Blob(['Text,Timestamp\n' + csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'speech-history.csv';
+            a.click();
+        }
+
+        async function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                const historyContainer = document.getElementById('historyContainer');
+                while (historyContainer.firstChild) {
+                    historyContainer.firstChild.style.opacity = '0';
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    historyContainer.removeChild(historyContainer.firstChild);
+                }
+                showToast('History cleared successfully', 'success');
+            }
+        }
+
+        // Initialize everything
+        // Replace the existing DOMContentLoaded event listener with this:
+        // Replace the existing DOMContentLoaded event listener with this:
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeSpeechRecognition();
+            loadHistory();
+
+            // Setup playback button
+            document.getElementById('playbackButton').addEventListener('click', function () {
+                togglePlayback(); // Continue with your existing playback handling
+
+                // Now trigger the play button in the history section
+                var historyPlayButtons = document.querySelectorAll('.history-play-button');
+                if (historyPlayButtons.length > 0) {
+                    historyPlayButtons[0].click(); // This triggers the first history play button found
+                }
+            });
+
+
+            // Setup keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && !e.repeat) {
+                    e.preventDefault();
+                    toggleRecording();
+                } else if (e.code === 'Escape') {
+                    document.getElementById('resultCard').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

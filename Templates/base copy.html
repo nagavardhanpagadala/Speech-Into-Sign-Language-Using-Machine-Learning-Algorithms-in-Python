@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .container {
+            margin-top: 50px;
+            max-width: 900px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: #ff6f61;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #e65a50;
+        }
+
+        .btn-primary:focus {
+            box-shadow: 0 0 5px rgba(255, 111, 97, 0.5);
+        }
+
+        /* #gif-container {
+            margin-top: 20px;
+            text-align: center;
+        } */
+
+        #gif-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #gif-display {
+            vertical-align: middle;
+            border-style: none;
+            width: 800px;        /* Set width to 800px */
+            height: 800px;       /* Set height to 800px */
+            max-width: 100%;     /* Ensure image doesn't overflow the container */
+            max-height: 100%;    /* Ensure image doesn't overflow the container */
+            object-fit: contain; /* Ensure the image fits within the specified dimensions without cropping */
+        }
+
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid #ddd;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <a class="navbar-brand" href="#">Assistant</a>
+    </nav>
+    <div class="container">
+        <h1>Assistant</h1>
+        <button id="run-assistant" class="btn btn-primary">Run Assistant</button>
+        <div id="gif-container">
+            <img id="gif-display" src="" alt="ISL Gif" style="display: none;"/>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2024 Assistant. All rights reserved.</p>
+    </footer>
+    <script>
+$(document).ready(function() {
+    $('#run-assistant').click(function() {
+        $('#loading').show();
+        $.ajax({
+            url: "/run_assistant",
+            method: 'GET',
+            success: function(response) {
+                $('#loading').hide();
+                if (response.gif_path) {
+                    $('#gif-display').attr('src', response.gif_path).show();
+                } else {
+                    alert('No corresponding GIF found.');
+                }
+            },
+            error: function() {
+                $('#loading').hide();
+                alert('Error running assistant.');
+            }
+        });
+    });
+});
+    </script>
+</body>
+</html>
