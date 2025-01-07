@@ -1,10 +1,9 @@
-![Screenshot 2025-01-07 123726](https://github.com/user-attachments/assets/f2a72833-59e6-433a-981a-9f45f88069b7)
-![main interface](https://github.com/user-attachments/assets/d7880872-0cbb-4a2f-a69c-cf5e6120a00d)
-
 # Speech-to-Sign Language Converter
 
 ## Project Overview
 Speech-to-Sign Language Converter is a web application that bridges communication gaps between hearing and deaf communities. It converts spoken words and text input into Indian Sign Language (ISL) animations, making communication more accessible and inclusive.
+![Screenshot 2025-01-07 123726](https://github.com/user-attachments/assets/f2a72833-59e6-433a-981a-9f45f88069b7)
+![main interface](https://github.com/user-attachments/assets/d7880872-0cbb-4a2f-a69c-cf5e6120a00d)
 
 ## Features
 - **Speech Recognition**: Real-time conversion of spoken words to text
