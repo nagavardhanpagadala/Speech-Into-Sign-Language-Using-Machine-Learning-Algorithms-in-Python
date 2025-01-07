@@ -1,4 +1,4 @@
-# Speech-to-Sign Language Converter
+# Speech-Into-Sign Language Using Machine Learning Algorithms in Python
 
 ## Project Overview
 Speech-to-Sign Language Converter is a web application that bridges communication gaps between hearing and deaf communities. It converts spoken words and text input into Indian Sign Language (ISL) animations, making communication more accessible and inclusive.
