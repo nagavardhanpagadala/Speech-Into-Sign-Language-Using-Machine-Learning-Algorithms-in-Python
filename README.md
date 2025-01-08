@@ -14,19 +14,29 @@ Speech-to-Sign Language Converter is a web application that bridges communicatio
 - **History Tracking**: Save and view previous conversions
 - **Responsive Design**: Works on both desktop and mobile devices
 
-## Technical Stack
-- **Backend**: Flask (Python)
-- **Database**: SQLite with SQLAlchemy ORM
-- **Authentication**: Flask-Login
-- **Speech Processing**: 
-  - SpeechRecognition for speech-to-text
-  - gTTS (Google Text-to-Speech) for text-to-audio
-- **Natural Language Processing**: 
-  - NLTK for text processing
-  - Scikit-learn for text similarity matching
-- **Frontend**:
-  - HTML/CSS/JavaScript
-  - AJAX for asynchronous requests
+## Technologies and Algorithms Used
+## Technologies
+**Flask Framework**: Backend framework for handling routes, APIs, and rendering templates.
+**SQLAlchemy**: ORM for managing the SQLite database of user accounts and histories.
+**SpeechRecognition**: Library for transcribing speech into text using Google's API.
+**Google Text-to-Speech (gTTS)**: Converts recognized text into speech audio files.
+**NLTK (Natural Language Toolkit)**: Performs natural language processing tasks like tokenization.
+**scikit-learn**: Provides the TF-IDF vectorization and cosine similarity calculations for matching input text.
+
+## Key Algorithms
+**TF-IDF Vectorization**:Converts text phrases into numerical vectors for similarity comparisons.
+
+**Cosine Similarity**:Measures similarity between the user's input and predefined phrases to find the best match.
+
+**Direct and Partial Matching**:
+Direct matching identifies exact matches from a predefined list.
+Partial matching ensures phrases with shared words are recognized.
+
+**Speech Recognition**:Converts speech input into text using Google's speech-to-text API.
+
+**Sign Language GIF Mapping**:Maps recognized phrases to Indian Sign Language (ISL) GIFs for visual output.
+
+**Text-to-Speech Conversion**:Generates speech audio from recognized or input text.
 
 ## Prerequisites
 - Python 3.8+
