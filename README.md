@@ -94,21 +94,6 @@ python app.py
    - Access your previous translations
    - Review past conversations
 
-## Project Structure
-```
-speech-to-sign-converter/
-├── app.py                 # Main application file
-├── requirements.txt       # Project dependencies
-├── static/
-│   ├── ISL_Gifs/         # Sign language animation GIFs
-│   ├── temp/             # Temporary audio files
-│   ├── css/              # Stylesheets
-│   └── js/               # JavaScript files
-├── templates/
-│   ├── index.html        # Landing page
-│   └── predict.html      # Main application page
-└── users.db              # SQLite database
-```
 
 ## Security Features
 - Password hashing using Werkzeug
