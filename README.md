@@ -17,10 +17,15 @@ Speech-to-Sign Language Converter is a web application that bridges communicatio
 ## Technologies and Algorithms Used
 ## Technologies
 **Flask Framework**: Backend framework for handling routes, APIs, and rendering templates.
+
 **SQLAlchemy**: ORM for managing the SQLite database of user accounts and histories.
+
 **SpeechRecognition**: Library for transcribing speech into text using Google's API.
+
 **Google Text-to-Speech (gTTS)**: Converts recognized text into speech audio files.
+
 **NLTK (Natural Language Toolkit)**: Performs natural language processing tasks like tokenization.
+
 **scikit-learn**: Provides the TF-IDF vectorization and cosine similarity calculations for matching input text.
 
 ## Key Algorithms
@@ -30,6 +35,7 @@ Speech-to-Sign Language Converter is a web application that bridges communicatio
 
 **Direct and Partial Matching**:
 Direct matching identifies exact matches from a predefined list.
+
 Partial matching ensures phrases with shared words are recognized.
 
 **Speech Recognition**:Converts speech input into text using Google's speech-to-text API.
